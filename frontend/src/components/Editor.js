@@ -9,7 +9,6 @@ import { ACTIONS } from "../Actions";
 
 function Editor({ socketRef, roomId, onCodeChange }) {
   const editorRef = useRef(null);
-
   useEffect(() => {
     const init = async () => {
       const editor = CodeMirror.fromTextArea(
@@ -22,12 +21,14 @@ function Editor({ socketRef, roomId, onCodeChange }) {
           lineNumbers: true,
         }
       );
+      // for sync the code
       editorRef.current = editor;
-      editor.setSize(null, "100%");
 
-      editor.on("change", (instance, changes) => {
+      editor.setSize(null, "100%");
+      editorRef.current.on("change", (instance, changes) => {
+        // console.log("changes", instance ,  changes );
         const { origin } = changes;
-        const code = instance.getValue();
+        const code = instance.getValue(); // code has value which we write
         onCodeChange(code);
         if (origin !== "setValue") {
           socketRef.current.emit(ACTIONS.CODE_CHANGE, {
@@ -39,32 +40,21 @@ function Editor({ socketRef, roomId, onCodeChange }) {
     };
 
     init();
+  }, []);
 
-    // Clean up CodeMirror instance on unmount
-    return () => {
-      if (editorRef.current) {
-        editorRef.current.toTextArea();
-        editorRef.current = null;
-      }
-    };
-  }, [onCodeChange, roomId, socketRef]); // Include dependencies
-
+  // data receive from server
   useEffect(() => {
     if (socketRef.current) {
-      const handleCodeChange = ({ code }) => {
+      socketRef.current.on(ACTIONS.CODE_CHANGE, ({ code }) => {
         if (code !== null) {
           editorRef.current.setValue(code);
         }
-      };
-
-      socketRef.current.on(ACTIONS.CODE_CHANGE, handleCodeChange);
-
-      // Cleanup function to remove the listener
-      return () => {
-        socketRef.current.off(ACTIONS.CODE_CHANGE, handleCodeChange);
-      };
+      });
     }
-  }, [socketRef]); // socketRef is a mutable object, so we use it directly
+    return () => {
+      socketRef.current.off(ACTIONS.CODE_CHANGE);
+    };
+  }, [socketRef.current]);
 
   return (
     <div style={{ height: "600px" }}>
