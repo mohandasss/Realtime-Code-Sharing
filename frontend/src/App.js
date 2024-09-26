@@ -6,15 +6,15 @@ import { Toaster } from 'react-hot-toast';
 
 function App() {
   return (
-    <>
-    <div>
-      <Toaster  position='top-center'></Toaster>
+    <div className="app-container">
+      <Toaster position='top-center' />
+      <Routes>
+        <Route path='/' element={<Home />} />
+        <Route path='/editor/:roomId' element={<EditorPage />} />
+        {/* Fallback route for 404 */}
+        <Route path='*' element={<div>404 Not Found</div>} />
+      </Routes>
     </div>
-    <Routes>
-     <Route path='/' element={ <Home /> } />
-     <Route path='/editor/:roomId' element={ <EditorPage /> } />
-    </Routes>
-    </>
   );
 }
 
