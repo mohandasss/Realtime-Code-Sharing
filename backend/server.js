@@ -7,6 +7,7 @@ const { Server } = require("socket.io");
 const http = require("http");
 const ACTIONS = require("./Actions");
 require("dotenv").config();
+const { exec } = require("child_process");
 
 const app = express();
 const server = http.createServer(app);
@@ -31,6 +32,47 @@ app.use(express.json());
 
 // User Model
 const User = require("./models/User");
+app.post("/compile", (req, res) => {
+  const { code, language } = req.body;
+
+  // You might want to sanitize and validate the input here.
+
+  // Temporary files to write the code and output
+  const filename = `temp.${language}`; // e.g., temp.py for Python
+  const outputFile = "output.txt";
+
+  // Write the code to a temporary file
+  require("fs").writeFileSync(filename, code);
+
+  // Execute the code using the appropriate command based on the language
+  let command;
+
+  switch (language) {
+    case "python3":
+      command = `python3 ${filename} > ${outputFile}`;
+      break;
+    case "nodejs":
+      command = `node ${filename} > ${outputFile}`;
+      break;
+    // Add more cases for other languages...
+    default:
+      return res.status(400).json({ error: "Unsupported language" });
+  }
+
+  exec(command, (err) => {
+    if (err) {
+      return res.status(500).json({ error: "Execution error" });
+    }
+
+    // Read the output from the output file
+    const output = require("fs").readFileSync(outputFile, "utf-8");
+    res.json({ output });
+
+    // Cleanup: delete temporary files if necessary
+    require("fs").unlinkSync(filename);
+    require("fs").unlinkSync(outputFile);
+  });
+});
 
 // Register Route
 app.post("/register", async (req, res) => {

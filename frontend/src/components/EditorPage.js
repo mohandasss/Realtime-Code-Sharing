@@ -115,7 +115,7 @@ function EditorPage() {
     setIsCompiling(true);
     try {
       const response = await axios.post("http://localhost:5000/compile", {
-        code: codeRef.current,
+        code: codeRef.current, // Ensure this is the code string
         language: selectedLanguage,
       });
       console.log("Backend response:", response.data);
@@ -127,6 +127,7 @@ function EditorPage() {
       setIsCompiling(false);
     }
   };
+  
 
   const toggleCompileWindow = () => {
     setIsCompileWindowOpen(!isCompileWindowOpen);
