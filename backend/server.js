@@ -54,10 +54,52 @@ app.post("/compile", (req, res) => {
     case "nodejs":
       command = `node ${filename} > ${outputFile}`;
       break;
-    // Add more cases for other languages...
+    case "java":
+      command = `javac ${filename} && java ${filename.replace('.java', '')} > ${outputFile}`;
+      break;
+    case "r":
+      command = `Rscript ${filename} > ${outputFile}`;
+      break;
+    case "c":
+      command = `gcc ${filename} -o ${filename.replace('.c', '')} && ./${filename.replace('.c', '')} > ${outputFile}`;
+      break;
+    case "cpp":
+      command = `g++ ${filename} -o ${filename.replace('.cpp', '')} && ./${filename.replace('.cpp', '')} > ${outputFile}`;
+      break;
+    case "ruby":
+      command = `ruby ${filename} > ${outputFile}`;
+      break;
+    case "go":
+      command = `go run ${filename} > ${outputFile}`;
+      break;
+    case "scala":
+      command = `scalac ${filename} && scala ${filename.replace('.scala', '')} > ${outputFile}`;
+      break;
+    case "bash":
+      command = `bash ${filename} > ${outputFile}`;
+      break;
+    case "sql":
+      command = `sqlcmd -i ${filename} -o ${outputFile}`; // Example for SQL Server
+      break;
+    case "pascal":
+      command = `fpc ${filename} && ./${filename.replace('.pas', '')} > ${outputFile}`;
+      break;
+    case "csharp":
+      command = `mcs ${filename} && mono ${filename.replace('.cs', '')}.exe > ${outputFile}`;
+      break;
+    case "php":
+      command = `php ${filename} > ${outputFile}`;
+      break;
+    case "swift":
+      command = `swift ${filename} > ${outputFile}`;
+      break;
+    case "rust":
+      command = `rustc ${filename} && ./${filename.replace('.rs', '')} > ${outputFile}`;
+      break;
     default:
       return res.status(400).json({ error: "Unsupported language" });
   }
+  
 
   exec(command, (err) => {
     if (err) {
