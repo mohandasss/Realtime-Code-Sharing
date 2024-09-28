@@ -2,19 +2,15 @@ import React from 'react';
 
 const Modal = ({ isOpen, onClose, onRegister, onSwitchToLogin }) => {
     if (!isOpen) return null;
-  
+
     const handleSubmit = async (e) => {
       e.preventDefault();
       const username = e.target.username.value;
       const password = e.target.password.value;
-  
-      // Assuming you have a function to handle registration
-      const success = await onRegister(username, password); // Modify this if needed
-      if (success) {
-        onClose(); // Close the modal after registration
-      }
+
+      await onRegister(username, password); // Register and handle success
     };
-  
+
     return (
       <div className="modal-overlay">
         <div className="modal-card">
@@ -33,7 +29,6 @@ const Modal = ({ isOpen, onClose, onRegister, onSwitchToLogin }) => {
         </div>
       </div>
     );
-  };
-  
-  export default Modal;
-  
+};
+
+export default Modal;

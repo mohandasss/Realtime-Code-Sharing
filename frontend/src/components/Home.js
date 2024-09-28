@@ -2,31 +2,32 @@ import React, { useState } from "react";
 import { v4 as uuid } from "uuid";
 import toast from "react-hot-toast";
 import { useNavigate } from "react-router-dom";
-import Modal from './Modal'; // Adjust the path as necessary
-import LoginModal from './LoginModal'; // Adjust the path as necessary
+import Modal from './Modal';
+import LoginModal from './LoginModal';
+
+const API_URL = process.env.REACT_APP_BACKEND_URL;
 
 function Home() {
   const [roomId, setRoomId] = useState("");
   const [username, setUsername] = useState("");
   const [isRegisterModalOpen, setIsRegisterModalOpen] = useState(false);
   const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
+  const [token, setToken] = useState(localStorage.getItem("token"));
 
   const navigate = useNavigate();
 
-  const generateRoomId = (e) => {
-    e.preventDefault();
+  const generateRoomId = () => {
     const Id = uuid();
     setRoomId(Id);
-    toast.success("Room Id is generated");
+    toast.success("Room ID generated");
   };
 
   const joinRoom = () => {
-    if (!roomId || !username) {
-      toast.error("Both fields are required");
-      return;
+    if (!token) {
+      setIsRegisterModalOpen(true);
+    } else {
+      navigate(`/editor/${roomId}`, { state: { username } });
     }
-    navigate(`/editor/${roomId}`, { state: { username } });
-    toast.success("Room is created");
   };
 
   const handleInputEnter = (e) => {
@@ -35,15 +36,54 @@ function Home() {
     }
   };
 
-  const handleRegisterSuccess = (username) => {
-    setUsername(username); // Set the username from registration
-    setIsRegisterModalOpen(false);
-    setIsLoginModalOpen(true); // Open login modal after successful registration
+  const handleRegisterSuccess = async (username, password) => {
+    const response = await fetch(`${API_URL}/register`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ username, password }),
+    });
+
+    if (response.ok) {
+      setUsername(username);
+      setIsRegisterModalOpen(false);
+      setIsLoginModalOpen(true);
+      toast.success("Registration successful! Please log in.");
+    } else {
+      const data = await response.json();
+      toast.error(data.message || "Registration failed.");
+    }
   };
 
-  const handleLoginSuccess = (username) => {
-    setUsername(username); // Update username on successful login
-    setIsLoginModalOpen(false);
+  const handleLoginSuccess = async (username, password) => {
+    const response = await fetch(`${API_URL}/login`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ username, password }),
+    });
+
+    if (response.ok) {
+      const data = await response.json();
+      setToken(data.token);
+      localStorage.setItem("token", data.token);
+      setUsername(username);
+      setIsLoginModalOpen(false);
+      toast.success("Login successful!");
+    } else {
+      const data = await response.json();
+      toast.error(data.message || "Login failed.");
+    }
+  };
+
+  const createNewRoom = () => {
+    if (token) {
+      generateRoomId(); // Generate and display the new room ID
+    } else {
+      setIsRegisterModalOpen(true); // Open registration if not authenticated
+    }
   };
 
   return (
@@ -81,7 +121,7 @@ function Home() {
                   onChange={(e) => setUsername(e.target.value)}
                   className="form-control mb-2"
                   placeholder="USERNAME"
-                  onKeyUp={handleInputEnter}
+                  disabled // Disable input if logged in
                 />
               </div>
               <button onClick={joinRoom} className="btn btn-success btn-lg btn-block">
@@ -90,7 +130,7 @@ function Home() {
               <p className="mt-3 text-light">
                 Don't have a room ID? create{" "}
                 <span
-                  onClick={() => setIsRegisterModalOpen(true)}
+                  onClick={createNewRoom}
                   className="text-success p-2"
                   style={{ cursor: "pointer" }}
                 >

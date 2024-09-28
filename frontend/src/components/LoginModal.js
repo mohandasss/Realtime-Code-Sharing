@@ -2,19 +2,15 @@ import React from 'react';
 
 const LoginModal = ({ isOpen, onClose, onLogin }) => {
     if (!isOpen) return null;
-  
+
     const handleSubmit = async (e) => {
       e.preventDefault();
       const username = e.target.username.value;
       const password = e.target.password.value;
-  
-      // Assuming you have a function to handle login
-      const success = await onLogin(username, password); // Modify this if needed
-      if (success) {
-        onClose(); // Close the modal after login
-      }
+
+      await onLogin(username, password); // Login and handle success
     };
-  
+
     return (
       <div className="modal-overlay">
         <div className="modal-card">
@@ -29,7 +25,6 @@ const LoginModal = ({ isOpen, onClose, onLogin }) => {
         </div>
       </div>
     );
-  };
-  
-  export default LoginModal;
-  
+};
+
+export default LoginModal;
