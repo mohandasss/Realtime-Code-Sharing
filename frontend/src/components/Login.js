@@ -16,7 +16,13 @@ const Login = () => {
     try {
       const response = await axios.post(`${process.env.REACT_APP_BACKEND_URL}/login`, { username, password });
       toast.success(response.data.message);
-      // Handle successful login (e.g., redirect, store token)
+      
+      // Store token in localStorage
+      localStorage.setItem('token', response.data.token);
+      
+      // Redirect to home with username
+      navigate('/', { state: { username } });
+      
     } catch (error) {
       toast.error(error.response ? error.response.data.message : "An error occurred. Please try again.");
     } finally {
@@ -33,8 +39,8 @@ const Login = () => {
       backgroundColor: '#0000'
     }}>
       <div style={{
-        maxWidth: '800px', // Increased width
-        padding: '60px',   // Increased padding
+        maxWidth: '800px', 
+        padding: '60px',
         border: '1px solid #ccc',
         borderRadius: '8px',
         boxShadow: '0 4px 8px rgba(0,0,0,0.1)',

@@ -127,7 +127,6 @@ function EditorPage() {
       setIsCompiling(false);
     }
   };
-  
 
   const toggleCompileWindow = () => {
     setIsCompileWindowOpen(!isCompileWindowOpen);
@@ -138,19 +137,27 @@ function EditorPage() {
       <div className="row flex-grow-1">
         {/* Client panel */}
         <div className="col-md-2 bg-dark text-light d-flex flex-column">
-          <img
-            src="/images/codecast.png"
-            alt="Logo"
-            className="img-fluid mx-auto"
-            style={{ maxWidth: "150px", marginTop: "-43px" }}
-          />
-          <hr style={{ marginTop: "-3rem" }} />
-
-          {/* Client list container */}
           <div className="d-flex flex-column flex-grow-1 overflow-auto">
             <span className="mb-2">Members</span>
             {clients.map((client) => (
-              <Client key={client.socketId} username={client.username} />
+              <div
+                key={client.socketId}
+                style={{
+                  backgroundColor:
+                    client.username === Location.state?.username
+                      ? "#ff6f61"
+                      : "#333",
+                  color: "#fff",
+                  borderRadius: "50%",
+                  padding: "10px",
+                  textAlign: "center",
+                  marginBottom: "10px",
+                }}
+              >
+                {client.username === Location.state?.username
+                  ? `${client.username} (You)`
+                  : client.username}
+              </div>
             ))}
           </div>
 

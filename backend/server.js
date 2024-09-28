@@ -6,9 +6,8 @@ const cors = require("cors");
 const { Server } = require("socket.io");
 const http = require("http");
 const ACTIONS = require("./Actions");
-require("dotenv").config();
 const { exec } = require("child_process");
-
+const dotenv = require("dotenv").config();
 const app = express();
 const server = http.createServer(app);
 const io = new Server(server, {
@@ -32,19 +31,11 @@ app.use(express.json());
 
 // User Model
 const User = require("./models/User");
-app.post("/compile", (req, res) => {
-  const { code, language } = req.body;
 
-  // You might want to sanitize and validate the input here.
-
-  // Temporary files to write the code and output
-  const filename = `temp.${language}`; // e.g., temp.py for Python
+// Function to execute code
+const executeCode = (filename, language, res) => {
   const outputFile = "output.txt";
 
-  // Write the code to a temporary file
-  require("fs").writeFileSync(filename, code);
-
-  // Execute the code using the appropriate command based on the language
   let command;
 
   switch (language) {
@@ -99,36 +90,47 @@ app.post("/compile", (req, res) => {
     default:
       return res.status(400).json({ error: "Unsupported language" });
   }
-  
 
   exec(command, (err) => {
     if (err) {
       return res.status(500).json({ error: "Execution error" });
     }
 
-    // Read the output from the output file
     const output = require("fs").readFileSync(outputFile, "utf-8");
     res.json({ output });
 
-    // Cleanup: delete temporary files if necessary
+    // Cleanup: delete temporary files
     require("fs").unlinkSync(filename);
     require("fs").unlinkSync(outputFile);
   });
+};
+
+// Compile Route
+app.post("/compile", (req, res) => {
+  const { code, language } = req.body;
+
+  if (!code || !language) {
+    return res.status(400).json({ error: "Code and language are required" });
+  }
+
+  const filename = `temp.${language}`;
+  require("fs").writeFileSync(filename, code);
+
+  executeCode(filename, language, res);
 });
 
 // Register Route
 app.post("/register", async (req, res) => {
   const { username, password } = req.body;
 
-  const existingUser = await User.findOne({ username });
-  if (existingUser) {
-    return res.status(400).json({ message: "User already exists" });
-  }
-
-  const hashedPassword = await bcrypt.hash(password, 10);
-  const newUser = new User({ username, password: hashedPassword });
-
   try {
+    const existingUser = await User.findOne({ username });
+    if (existingUser) {
+      return res.status(400).json({ message: "User already exists" });
+    }
+
+    const hashedPassword = await bcrypt.hash(password, 10);
+    const newUser = new User({ username, password: hashedPassword });
     await newUser.save();
     res.status(201).json({ message: "User registered successfully" });
   } catch (error) {
@@ -139,22 +141,26 @@ app.post("/register", async (req, res) => {
 // Login Route
 app.post("/login", async (req, res) => {
   const { username, password } = req.body;
-  const user = await User.findOne({ username });
 
-  if (!user) {
-    return res.status(401).json({ message: "Invalid username or password" });
+  try {
+    const user = await User.findOne({ username });
+    if (!user) {
+      return res.status(401).json({ message: "Invalid username or password" });
+    }
+
+    const isValid = await bcrypt.compare(password, user.password);
+    if (!isValid) {
+      return res.status(401).json({ message: "Invalid username or password" });
+    }
+
+    const token = jwt.sign({ username }, process.env.JWT_SECRET, { expiresIn: '7d' });
+    res.json({ token, message: "Logged in Successfully" });
+  } catch (error) {
+    res.status(500).json({ error: "Failed to log in" });
   }
-
-  const isValid = await bcrypt.compare(password, user.password);
-  if (!isValid) {
-    return res.status(401).json({ message: "Invalid username or password" });
-  }
-
-  const token = jwt.sign({ username }, process.env.JWT_SECRET, { expiresIn: '1h' });
-  res.json({ token });
 });
 
-// Middleware for JWT verification
+// JWT Verification Middleware
 const authenticateJWT = (req, res, next) => {
   const token = req.headers.authorization?.split(" ")[1];
   if (!token) return res.sendStatus(403); // Forbidden
@@ -194,14 +200,13 @@ io.on("connection", (socket) => {
   });
 });
 
+// Get all connected clients
 const getAllConnectedClients = (roomId) => {
   return Array.from(io.sockets.adapter.rooms.get(roomId) || []).map(
-    (socketId) => {
-      return {
-        socketId,
-        username: userSocketMap[socketId],
-      };
-    }
+    (socketId) => ({
+      socketId,
+      username: userSocketMap[socketId],
+    })
   );
 };
 

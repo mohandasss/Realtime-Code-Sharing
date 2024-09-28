@@ -1,7 +1,7 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { v4 as uuid } from "uuid";
 import toast from "react-hot-toast";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import Modal from './Modal';
 import LoginModal from './LoginModal';
 
@@ -15,6 +15,14 @@ function Home() {
   const [token, setToken] = useState(localStorage.getItem("token"));
 
   const navigate = useNavigate();
+  const location = useLocation();
+
+  useEffect(() => {
+    // Check if username is passed from login
+    if (location.state && location.state.username) {
+      setUsername(location.state.username);
+    }
+  }, [location.state]);
 
   const generateRoomId = () => {
     const Id = uuid();
@@ -23,6 +31,11 @@ function Home() {
   };
 
   const joinRoom = () => {
+    if (!roomId) {
+      toast.error("Room ID cannot be empty.");
+      return;
+    }
+    
     if (!token) {
       setIsRegisterModalOpen(true);
     } else {
@@ -37,6 +50,10 @@ function Home() {
   };
 
   const handleRegisterSuccess = async (username, password) => {
+    if (!validateUsername(username) || !validatePassword(password)) {
+      return;
+    }
+
     const response = await fetch(`${API_URL}/register`, {
       method: "POST",
       headers: {
@@ -57,6 +74,10 @@ function Home() {
   };
 
   const handleLoginSuccess = async (username, password) => {
+    if (!validateUsername(username) || !validatePassword(password)) {
+      return;
+    }
+
     const response = await fetch(`${API_URL}/login`, {
       method: "POST",
       headers: {
@@ -84,6 +105,23 @@ function Home() {
     } else {
       setIsRegisterModalOpen(true); // Open registration if not authenticated
     }
+  };
+
+  const validateUsername = (username) => {
+    const usernameRegex = /^[a-zA-Z0-9]{3,20}$/; // 3 to 20 alphanumeric characters
+    if (!usernameRegex.test(username)) {
+      toast.error("Username must be 3-20 characters long and can only contain letters and numbers.");
+      return false;
+    }
+    return true;
+  };
+
+  const validatePassword = (password) => {
+    if (password.length < 6) {
+      toast.error("Password must be at least 6 characters long.");
+      return false;
+    }
+    return true;
   };
 
   return (
@@ -121,7 +159,7 @@ function Home() {
                   onChange={(e) => setUsername(e.target.value)}
                   className="form-control mb-2"
                   placeholder="USERNAME"
-                  disabled // Disable input if logged in
+                  disabled={!token} // Disable input if logged in
                 />
               </div>
               <button onClick={joinRoom} className="btn btn-success btn-lg btn-block">

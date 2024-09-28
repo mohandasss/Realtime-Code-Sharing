@@ -165,3 +165,30 @@ input::placeholder {
   padding: 20px;
   flex: 1; /* Allow content to fill remaining space */
 }
+.members-section {
+  padding: 20px;
+}
+
+.members-list {
+  display: flex;
+  flex-direction: column;
+}
+
+.member {
+  padding: 10px;
+  border-radius: 8px;
+  margin: 5px 0;
+  background-color: #f0f0f0; /* Light background */
+}
+
+.current-user {
+  background-color: #e0ffe0; /* Different background for current user */
+}
+
+.badge {
+  background-color: #007bff; /* Badge color */
+  color: white;
+  border-radius: 12px;
+  padding: 3px 8px;
+  margin-left: 10px;
+}
