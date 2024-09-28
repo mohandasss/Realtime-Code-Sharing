@@ -210,3 +210,17 @@ input::placeholder {
   border-radius: 10px;
   text-align: center;
 }
+.social-icons {
+  display: flex;
+  gap: 30px; /* Adjust spacing between icons */
+  margin-top: 20px; /* Space above the icons */
+}
+
+.social-icons a {
+  text-decoration: none; /* Remove underline */
+  transition: transform 0.2s; /* Add a hover effect */
+}
+
+.social-icons a:hover {
+  transform: scale(1.1); /* Scale up the icon on hover */
+}

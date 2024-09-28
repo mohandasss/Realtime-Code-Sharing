@@ -7,6 +7,7 @@ import { toast, Toaster } from 'react-hot-toast'; // Import Toaster
 import Register from './components/Register';
 import Login from './components/Login';
 import { useEffect, useState } from 'react';
+import About from './components/Aboutus';
 
 function App() {
   const [isAuthenticated, setIsAuthenticated] = useState(!!localStorage.getItem("token"));
@@ -32,6 +33,7 @@ function App() {
       <div className="content">
         <Toaster position='top-center' /> {/* Add Toaster here */}
         <Routes>
+        <Route path="/AboutUs" element={<About />} />
           <Route path='/' element={<Home />} />
           <Route path='/editor/:roomId' element={<EditorPage />} />
           <Route path='/Register' element={<Register />} />

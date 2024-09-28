@@ -202,13 +202,11 @@ io.on("connection", (socket) => {
 
 // Get all connected clients
 const getAllConnectedClients = (roomId) => {
-  return Array.from(io.sockets.adapter.rooms.get(roomId) || []).map(
-    (socketId) => ({
-      socketId,
-      username: userSocketMap[socketId],
-    })
-  );
+  return Array.from(io.sockets.adapter.rooms.get(roomId) || []).map(socketId => {
+    return { socketId, username: userSocketMap[socketId] }; // Assuming userSocketMap is maintaining a mapping of socket IDs to usernames.
+  });
 };
+
 
 // Server Listening
 const PORT = process.env.PORT || 5000;
