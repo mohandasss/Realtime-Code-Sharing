@@ -42,18 +42,18 @@ const Register = () => {
       }}>
         <h2 style={{ textAlign: 'center' }}>Register</h2>
         <form onSubmit={handleSubmit}>
-          <div style={{ marginBottom: '15px' }}>
-            <label htmlFor="username">Username</label>
+          <div style={{ fontFamily:"urbanist", marginBottom: '15px' }}>
+            <label  htmlFor="username">Username</label>
             <input
               type="text"
               id="username"
               value={username}
               onChange={(e) => setUsername(e.target.value)}
               required
-              style={{ width: '100%', padding: '10px', borderRadius: '4px', border: '1px solid #ccc' }}
+              style={{  width: '100%', padding: '10px', borderRadius: '4px', border: '1px solid #ccc' }}
             />
           </div>
-          <div style={{ marginBottom: '15px' }}>
+          <div  style={{  fontFamily:"urbanist", marginBottom: '15px' }}>
             <label htmlFor="password">Password</label>
             <input
               type="password"
@@ -65,6 +65,7 @@ const Register = () => {
             />
           </div>
           <button type="submit" disabled={loading} style={{
+             fontFamily:"urbanist",
             width: '100%',
             padding: '12px',
             borderRadius: '4px',
@@ -72,10 +73,20 @@ const Register = () => {
             backgroundColor: '#4CAF50',
             color: 'white',
             cursor: 'pointer'
+            
           }}>
             {loading ? 'Registering...' : 'Register'}
           </button>
         </form>
+        <p style={{  fontFamily:"urbanist",textAlign: 'center', marginTop: '20px' }}>
+          Already have an account?{' '}
+          <span
+            onClick={() => navigate('/login')}
+            style={{ color: '#4CAF50', cursor: 'pointer' }}
+          >
+            Login
+          </span>
+        </p>
       </div>
     </div>
   );

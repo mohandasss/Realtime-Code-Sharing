@@ -40,7 +40,7 @@ function EditorPage() {
   const [selectedLanguage, setSelectedLanguage] = useState("python3");
   const codeRef = useRef(null);
 
-  const Location = useLocation();
+  const location = useLocation();
   const navigate = useNavigate();
   const { roomId } = useParams();
 
@@ -48,52 +48,50 @@ function EditorPage() {
 
   useEffect(() => {
     const init = async () => {
-      socketRef.current = await initSocket();
-      socketRef.current.on("connect_error", (err) => handleErrors(err));
-      socketRef.current.on("connect_failed", (err) => handleErrors(err));
+        socketRef.current = await initSocket();
+        socketRef.current.on("connect_error", (err) => handleErrors(err));
+        socketRef.current.on("connect_failed", (err) => handleErrors(err));
 
-      const handleErrors = (err) => {
-        console.log("Error", err);
-        toast.error("Socket connection failed, Try again later");
-        navigate("/");
-      };
+        const handleErrors = (err) => {
+            console.log("Error", err);
+            toast.error("Socket connection failed, Try again later");
+            navigate("/");
+        };
 
-      socketRef.current.emit(ACTIONS.JOIN, {
-        roomId,
-        username: Location.state?.username,
-      });
-
-      socketRef.current.on(
-        ACTIONS.JOINED,
-        ({ clients, username, socketId }) => {
-          if (username !== Location.state?.username) {
-            toast.success(`${username} joined the room.`);
-          }
-          setClients(clients);
-          socketRef.current.emit(ACTIONS.SYNC_CODE, {
-            code: codeRef.current,
-            socketId,
-          });
-        }
-      );
-
-      socketRef.current.on(ACTIONS.DISCONNECTED, ({ socketId, username }) => {
-        toast.success(`${username} left the room`);
-        setClients((prev) => {
-          return prev.filter((client) => client.socketId !== socketId);
+        socketRef.current.emit(ACTIONS.JOIN, {
+            roomId,
+            username: Location.state?.username,
         });
-      });
+
+        socketRef.current.on(ACTIONS.JOINED, ({ clients, username }) => {
+            // Update the client list when a new user joins
+            setClients(clients);
+            toast.success(`${username} joined the room.`);
+
+            // Emit the SYNC_CODE to the newly joined user
+            socketRef.current.emit(ACTIONS.SYNC_CODE, {
+                code: codeRef.current,
+            });
+        });
+
+        socketRef.current.on(ACTIONS.DISCONNECTED, ({ socketId, username }) => {
+            toast.success(`${username} left the room`);
+            setClients((prev) => {
+                return prev.filter((client) => client.socketId !== socketId);
+            });
+        });
     };
     init();
 
     return () => {
-      socketRef.current && socketRef.current.disconnect();
-      socketRef.current.off(ACTIONS.JOINED);
-      socketRef.current.off(ACTIONS.DISCONNECTED);
+        socketRef.current && socketRef.current.disconnect();
+        socketRef.current.off(ACTIONS.JOINED);
+        socketRef.current.off(ACTIONS.DISCONNECTED);
     };
-  }, []);
+}, []);
 
-  if (!Location.state) {
+
+  if (!location.state) {
     return <Navigate to="/" />;
   }
 
@@ -139,12 +137,15 @@ function EditorPage() {
         <div className="col-md-2 bg-dark text-light d-flex flex-column">
           <div className="d-flex flex-column flex-grow-1 overflow-auto">
             <span className="mb-2">Members</span>
+            {/* Show the current user */}
+            <Client username={location.state.username} /> {/* Display the authenticated user's avatar and username */}
+            {/* Show other clients */}
             {clients.map((client) => (
               <div
                 key={client.socketId}
                 style={{
                   backgroundColor:
-                    client.username === Location.state?.username
+                    client.username === location.state?.username
                       ? "#ff6f61"
                       : "#333",
                   color: "#fff",
@@ -154,7 +155,7 @@ function EditorPage() {
                   marginBottom: "10px",
                 }}
               >
-                {client.username === Location.state?.username
+                {client.username === location.state?.username
                   ? `${client.username} (You)`
                   : client.username}
               </div>
@@ -191,12 +192,13 @@ function EditorPage() {
           </div>
 
           <Editor
-            socketRef={socketRef}
-            roomId={roomId}
-            onCodeChange={(code) => {
-              codeRef.current = code;
-            }}
-          />
+  socketRef={socketRef}
+  roomId={roomId}
+  onCodeChange={(code) => {
+    codeRef.current = code;
+  }}
+/>
+
         </div>
       </div>
 

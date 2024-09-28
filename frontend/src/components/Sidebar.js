@@ -1,8 +1,9 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import codeicon from "./DevCaster1.png";
+import toast from 'react-hot-toast';
 
-const Sidebar = ({ onLogout, isAuthenticated }) => {
+const Sidebar = ({ isAuthenticated, onLogout }) => {
   return (
     <div className="sidebar">
       <div className="logo-container">
@@ -11,13 +12,13 @@ const Sidebar = ({ onLogout, isAuthenticated }) => {
       </div>
       <Link to="/" className="nav-link">Home</Link>
       <Link to="/AboutUs" className="nav-link">About Us</Link>
-      {!isAuthenticated ? (
+      {isAuthenticated ? (
+        <Link to onClick={onLogout} className="nav-link">Logout</Link>
+      ) : (
         <>
           <Link to="/Login" className="nav-link">Login</Link>
           <Link to="/Register" className="nav-link">Register</Link>
         </>
-      ) : (
-        <Link to="/Logout" className="nav-link" onClick={onLogout}>Logout</Link>
       )}
     </div>
   );

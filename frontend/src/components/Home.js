@@ -37,7 +37,7 @@ function Home() {
     }
     
     if (!token) {
-      setIsRegisterModalOpen(true);
+      navigate("/register")
     } else {
       navigate(`/editor/${roomId}`, { state: { username } });
     }
@@ -103,7 +103,7 @@ function Home() {
     if (token) {
       generateRoomId(); // Generate and display the new room ID
     } else {
-      setIsRegisterModalOpen(true); // Open registration if not authenticated
+      navigate("/register") // Open registration if not authenticated
     }
   };
 

@@ -3,7 +3,7 @@ import axios from 'axios';
 import toast from 'react-hot-toast';
 import { useNavigate } from 'react-router-dom';
 
-const Login = () => {
+const Login = ({ setIsAuthenticated }) => {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
@@ -15,11 +15,14 @@ const Login = () => {
 
     try {
       const response = await axios.post(`${process.env.REACT_APP_BACKEND_URL}/login`, { username, password });
-      toast.success(response.data.message);
       
       // Store token in localStorage
       localStorage.setItem('token', response.data.token);
       
+      // Update authentication state
+      setIsAuthenticated(true);
+      toast.success("Welcome to DevCaster") // Update here to reflect the change immediately
+
       // Redirect to home with username
       navigate('/', { state: { username } });
       
@@ -48,7 +51,7 @@ const Login = () => {
       }}>
         <h2 style={{ textAlign: 'center' }}>Login</h2>
         <form onSubmit={handleSubmit}>
-          <div style={{ marginBottom: '15px' }}>
+          <div style={{  fontFamily:"urbanist", marginBottom: '15px' }}>
             <label htmlFor="username">Username</label>
             <input
               type="text"
@@ -59,7 +62,7 @@ const Login = () => {
               style={{ width: '100%', padding: '10px', borderRadius: '4px', border: '1px solid #ccc' }}
             />
           </div>
-          <div style={{ marginBottom: '15px' }}>
+          <div style={{  fontFamily:"urbanist", marginBottom: '15px' }}>
             <label htmlFor="password">Password</label>
             <input
               type="password"
@@ -71,6 +74,7 @@ const Login = () => {
             />
           </div>
           <button type="submit" disabled={loading} style={{
+             fontFamily:"urbanist",
             width: '100%',
             padding: '12px',
             borderRadius: '4px',
@@ -82,6 +86,15 @@ const Login = () => {
             {loading ? 'Logging in...' : 'Login'}
           </button>
         </form>
+        <p style={{ fontFamily:"urbanist", textAlign: 'center', marginTop: '20px' }}>
+          Don't have an account?{' '}
+          <span
+            onClick={() => navigate('/register')}
+            style={{ color: '#4CAF50', cursor: 'pointer' }}
+          >
+            Register
+          </span>
+        </p>
       </div>
     </div>
   );
