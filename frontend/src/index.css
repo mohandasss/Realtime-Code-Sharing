@@ -224,3 +224,18 @@ input::placeholder {
 .social-icons a:hover {
   transform: scale(1.1); /* Scale up the icon on hover */
 }
+.client-list {
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+}
+
+.client-item {
+  display: flex;
+  align-items: center;
+  margin-bottom: 10px;
+}
+
+.client-item .avatar {
+  margin-right: 10px; /* Space between avatar and username */
+}

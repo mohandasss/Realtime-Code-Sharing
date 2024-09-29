@@ -1,14 +1,19 @@
 const express = require("express");
-const mongoose = require("mongoose");
-const bcrypt = require("bcrypt");
-const jwt = require("jsonwebtoken");
-const cors = require("cors");
-const { Server } = require("socket.io");
-const http = require("http");
-const ACTIONS = require("./Actions");
-const { exec } = require("child_process");
-const dotenv = require("dotenv").config();
 const app = express();
+const http = require("http");
+const { Server } = require("socket.io");
+const ACTIONS = require("./Actions");
+const cors = require("cors");
+const axios = require("axios");
+const mongoose = require("mongoose"); // Make sure to import mongoose
+const bcrypt = require("bcrypt"); // Make sure to import bcrypt
+const jwt = require("jsonwebtoken"); // Make sure to import jwt
+require("dotenv").config();
+ const User =require("./models/User")
+
+app.use(cors());
+app.use(express.json());
+
 const server = http.createServer(app);
 const io = new Server(server, {
   cors: {
@@ -20,103 +25,56 @@ const io = new Server(server, {
 // Connect to MongoDB
 mongoose.connect(process.env.MONGODB_URI, {
   useNewUrlParser: true,
-  useUnifiedTopology: true,
+
 })
-.then(() => console.log("MongoDB connected"))
-.catch(err => console.error("MongoDB connection error:", err));
+  .then(() => console.log("MongoDB connected"))
+  .catch(err => console.error("MongoDB connection error:", err));
 
-// Middleware
-app.use(cors());
-app.use(express.json());
-
-// User Model
-const User = require("./models/User");
-
-// Function to execute code
-const executeCode = (filename, language, res) => {
-  const outputFile = "output.txt";
-
-  let command;
-
-  switch (language) {
-    case "python3":
-      command = `python3 ${filename} > ${outputFile}`;
-      break;
-    case "nodejs":
-      command = `node ${filename} > ${outputFile}`;
-      break;
-    case "java":
-      command = `javac ${filename} && java ${filename.replace('.java', '')} > ${outputFile}`;
-      break;
-    case "r":
-      command = `Rscript ${filename} > ${outputFile}`;
-      break;
-    case "c":
-      command = `gcc ${filename} -o ${filename.replace('.c', '')} && ./${filename.replace('.c', '')} > ${outputFile}`;
-      break;
-    case "cpp":
-      command = `g++ ${filename} -o ${filename.replace('.cpp', '')} && ./${filename.replace('.cpp', '')} > ${outputFile}`;
-      break;
-    case "ruby":
-      command = `ruby ${filename} > ${outputFile}`;
-      break;
-    case "go":
-      command = `go run ${filename} > ${outputFile}`;
-      break;
-    case "scala":
-      command = `scalac ${filename} && scala ${filename.replace('.scala', '')} > ${outputFile}`;
-      break;
-    case "bash":
-      command = `bash ${filename} > ${outputFile}`;
-      break;
-    case "sql":
-      command = `sqlcmd -i ${filename} -o ${outputFile}`; // Example for SQL Server
-      break;
-    case "pascal":
-      command = `fpc ${filename} && ./${filename.replace('.pas', '')} > ${outputFile}`;
-      break;
-    case "csharp":
-      command = `mcs ${filename} && mono ${filename.replace('.cs', '')}.exe > ${outputFile}`;
-      break;
-    case "php":
-      command = `php ${filename} > ${outputFile}`;
-      break;
-    case "swift":
-      command = `swift ${filename} > ${outputFile}`;
-      break;
-    case "rust":
-      command = `rustc ${filename} && ./${filename.replace('.rs', '')} > ${outputFile}`;
-      break;
-    default:
-      return res.status(400).json({ error: "Unsupported language" });
-  }
-
-  exec(command, (err) => {
-    if (err) {
-      return res.status(500).json({ error: "Execution error" });
+const userSocketMap = {};
+const getAllConnectedClients = (roomId) => {
+  return Array.from(io.sockets.adapter.rooms.get(roomId) || []).map(
+    (socketId) => {
+      return {
+        socketId,
+        username: userSocketMap[socketId],
+      };
     }
-
-    const output = require("fs").readFileSync(outputFile, "utf-8");
-    res.json({ output });
-
-    // Cleanup: delete temporary files
-    require("fs").unlinkSync(filename);
-    require("fs").unlinkSync(outputFile);
-  });
+  );
 };
 
-// Compile Route
-app.post("/compile", (req, res) => {
-  const { code, language } = req.body;
+io.on("connection", (socket) => {
+  socket.on(ACTIONS.JOIN, ({ roomId, username }) => {
+    userSocketMap[socket.id] = username;
+    socket.join(roomId);
+    const clients = getAllConnectedClients(roomId);
+    clients.forEach(({ socketId }) => {
+      io.to(socketId).emit(ACTIONS.JOINED, {
+        clients,
+        username,
+        socketId: socket.id,
+      });
+    });
+  });
 
-  if (!code || !language) {
-    return res.status(400).json({ error: "Code and language are required" });
-  }
+  socket.on(ACTIONS.CODE_CHANGE, ({ roomId, code }) => {
+    socket.in(roomId).emit(ACTIONS.CODE_CHANGE, { code });
+  });
 
-  const filename = `temp.${language}`;
-  require("fs").writeFileSync(filename, code);
+  socket.on(ACTIONS.SYNC_CODE, ({ socketId, code }) => {
+    io.to(socketId).emit(ACTIONS.CODE_CHANGE, { code });
+  });
 
-  executeCode(filename, language, res);
+  socket.on("disconnecting", () => {
+    const rooms = [...socket.rooms];
+    rooms.forEach((roomId) => {
+      socket.in(roomId).emit(ACTIONS.DISCONNECTED, {
+        socketId: socket.id,
+        username: userSocketMap[socket.id],
+      });
+    });
+    delete userSocketMap[socket.id];
+    socket.leave();
+  });
 });
 
 // Register Route
@@ -160,53 +118,38 @@ app.post("/login", async (req, res) => {
   }
 });
 
-// JWT Verification Middleware
-const authenticateJWT = (req, res, next) => {
-  const token = req.headers.authorization?.split(" ")[1];
-  if (!token) return res.sendStatus(403); // Forbidden
+// Compile Route
+app.post("/compile", async (req, res) => {
+  const { code, language } = req.body;
 
-  jwt.verify(token, process.env.JWT_SECRET, (err, user) => {
-    if (err) return res.sendStatus(403); // Forbidden
-    req.user = user;
-    next();
-  });
-};
+  // Check if both code and language are provided
+  if (!code || !language) {
+    return res.status(400).json({ error: "Code and language are required" });
+  }
 
-// Socket.IO Connection
-const userSocketMap = {};
-io.on("connection", (socket) => {
-  const token = socket.handshake.query.token;
+  // Ensure language exists in languageConfig
+  const versionIndex = languageConfig[language]?.versionIndex;
+  if (!versionIndex) {
+    return res.status(400).json({ error: "Invalid language" });
+  }
 
-  jwt.verify(token, process.env.JWT_SECRET, (err, user) => {
-    if (err) {
-      socket.disconnect(); // Disconnect if JWT is invalid
-      return;
-    }
-
-    socket.on(ACTIONS.JOIN, ({ roomId, username }) => {
-      userSocketMap[socket.id] = username;
-      socket.join(roomId);
-      const clients = getAllConnectedClients(roomId);
-      clients.forEach(({ socketId }) => {
-        io.to(socketId).emit(ACTIONS.JOINED, {
-          clients,
-          username,
-          socketId: socket.id,
-        });
-      });
+  try {
+    // Make the API call to JDoodle
+    const response = await axios.post("https://api.jdoodle.com/v1/execute", {
+      script: code,
+      language: language,
+      versionIndex: versionIndex,
+      clientId: process.env.JDOODLE_CLIENT_ID,
+      clientSecret: process.env.JDOODLE_CLIENT_SECRET,
     });
 
-    // Other socket events...
-  });
+    // Return the response from JDoodle
+    res.json(response.data);
+  } catch (error) {
+    console.error('JDoodle API Error:', error.response?.data || error.message);
+    res.status(500).json({ error: "Failed to compile code" });
+  }
 });
-
-// Get all connected clients
-const getAllConnectedClients = (roomId) => {
-  return Array.from(io.sockets.adapter.rooms.get(roomId) || []).map(socketId => {
-    return { socketId, username: userSocketMap[socketId] }; // Assuming userSocketMap is maintaining a mapping of socket IDs to usernames.
-  });
-};
-
 
 // Server Listening
 const PORT = process.env.PORT || 5000;
