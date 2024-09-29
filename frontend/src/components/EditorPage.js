@@ -3,12 +3,7 @@ import Client from "./Client";
 import Editor from "./Editor";
 import { initSocket } from "../Socket";
 import { ACTIONS } from "../Actions";
-import {
-  useNavigate,
-  useLocation,
-  Navigate,
-  useParams,
-} from "react-router-dom";
+import { useNavigate, useLocation, Navigate, useParams } from "react-router-dom";
 import { toast } from "react-hot-toast";
 import axios from "axios";
 
@@ -38,7 +33,7 @@ function EditorPage() {
   const [isCompileWindowOpen, setIsCompileWindowOpen] = useState(false);
   const [isCompiling, setIsCompiling] = useState(false);
   const [selectedLanguage, setSelectedLanguage] = useState("python3");
-  const codeRef = useRef(null);
+  const codeRef = useRef("");
 
   const location = useLocation();
   const navigate = useNavigate();
@@ -48,48 +43,50 @@ function EditorPage() {
 
   useEffect(() => {
     const init = async () => {
-        socketRef.current = await initSocket();
-        socketRef.current.on("connect_error", (err) => handleErrors(err));
-        socketRef.current.on("connect_failed", (err) => handleErrors(err));
+      socketRef.current = await initSocket();
+      socketRef.current.on("connect_error", (err) => handleErrors(err));
+      socketRef.current.on("connect_failed", (err) => handleErrors(err));
 
-        const handleErrors = (err) => {
-            console.log("Error", err);
-            toast.error("Socket connection failed, Try again later");
-            navigate("/");
-        };
+      const handleErrors = (err) => {
+        console.log("Error", err);
+        toast.error("Socket connection failed, try again later");
+        navigate("/");
+      };
 
-        socketRef.current.emit(ACTIONS.JOIN, {
-            roomId,
-            username: Location.state?.username,
-        });
+      socketRef.current.emit(ACTIONS.JOIN, {
+        roomId,
+        username: location.state?.username,
+      });
 
-        socketRef.current.on(ACTIONS.JOINED, ({ clients, username }) => {
-            // Update the client list when a new user joins
-            setClients(clients);
+      socketRef.current.on(
+        ACTIONS.JOINED,
+        ({ clients, username }) => {
+          if (username !== location.state?.username) {
             toast.success(`${username} joined the room.`);
+          }
+          setClients(clients);
+          socketRef.current.emit(ACTIONS.SYNC_CODE, {
+            code: codeRef.current,
+          });
+        }
+      );
 
-            // Emit the SYNC_CODE to the newly joined user
-            socketRef.current.emit(ACTIONS.SYNC_CODE, {
-                code: codeRef.current,
-            });
+      socketRef.current.on(ACTIONS.DISCONNECTED, ({ socketId, username }) => {
+        toast.success(`${username} left the room`);
+        setClients((prev) => {
+          return prev.filter((client) => client.socketId !== socketId);
         });
-
-        socketRef.current.on(ACTIONS.DISCONNECTED, ({ socketId, username }) => {
-            toast.success(`${username} left the room`);
-            setClients((prev) => {
-                return prev.filter((client) => client.socketId !== socketId);
-            });
-        });
+      });
     };
+
     init();
 
     return () => {
-        socketRef.current && socketRef.current.disconnect();
-        socketRef.current.off(ACTIONS.JOINED);
-        socketRef.current.off(ACTIONS.DISCONNECTED);
+      socketRef.current && socketRef.current.disconnect();
+      socketRef.current.off(ACTIONS.JOINED);
+      socketRef.current.off(ACTIONS.DISCONNECTED);
     };
-}, []);
-
+  }, [navigate, roomId, location.state]);
 
   if (!location.state) {
     return <Navigate to="/" />;
@@ -113,7 +110,7 @@ function EditorPage() {
     setIsCompiling(true);
     try {
       const response = await axios.post("http://localhost:5000/compile", {
-        code: codeRef.current, // Ensure this is the code string
+        code: codeRef.current,
         language: selectedLanguage,
       });
       console.log("Backend response:", response.data);
@@ -135,30 +132,19 @@ function EditorPage() {
       <div className="row flex-grow-1">
         {/* Client panel */}
         <div className="col-md-2 bg-dark text-light d-flex flex-column">
+          <img
+            src="/images/codecast.png"
+            alt="Logo"
+            className="img-fluid mx-auto"
+            style={{ maxWidth: "150px", marginTop: "-43px" }}
+          />
+          <hr style={{ marginTop: "-3rem" }} />
+
+          {/* Client list container */}
           <div className="d-flex flex-column flex-grow-1 overflow-auto">
-            <span className="mb-2">Members</span>
-            {/* Show the current user */}
-            <Client username={location.state.username} /> {/* Display the authenticated user's avatar and username */}
-            {/* Show other clients */}
+            <span className="mb-5">Members</span>
             {clients.map((client) => (
-              <div
-                key={client.socketId}
-                style={{
-                  backgroundColor:
-                    client.username === location.state?.username
-                      ? "#ff6f61"
-                      : "#333",
-                  color: "#fff",
-                  borderRadius: "50%",
-                  padding: "10px",
-                  textAlign: "center",
-                  marginBottom: "10px",
-                }}
-              >
-                {client.username === location.state?.username
-                  ? `${client.username} (You)`
-                  : client.username}
-              </div>
+              <Client key={client.socketId} username={client.username} />
             ))}
           </div>
 
@@ -184,7 +170,7 @@ function EditorPage() {
               onChange={(e) => setSelectedLanguage(e.target.value)}
             >
               {LANGUAGES.map((lang) => (
-                <option key={lang} value={lang}>
+                <option style={{ fontFamily: "urbanist" }} key={lang} value={lang}>
                   {lang}
                 </option>
               ))}
@@ -192,13 +178,12 @@ function EditorPage() {
           </div>
 
           <Editor
-  socketRef={socketRef}
-  roomId={roomId}
-  onCodeChange={(code) => {
-    codeRef.current = code;
-  }}
-/>
-
+            socketRef={socketRef}
+            roomId={roomId}
+            onCodeChange={(code) => {
+              codeRef.current = code;
+            }}
+          />
         </div>
       </div>
 
@@ -213,9 +198,7 @@ function EditorPage() {
 
       {/* Compiler section */}
       <div
-        className={`bg-dark text-light p-3 ${
-          isCompileWindowOpen ? "d-block" : "d-none"
-        }`}
+        className={`bg-dark text-light p-3 ${isCompileWindowOpen ? "d-block" : "d-none"}`}
         style={{
           position: "fixed",
           bottom: 0,

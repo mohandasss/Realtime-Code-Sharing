@@ -7,11 +7,22 @@ import "codemirror/lib/codemirror.css";
 import CodeMirror from "codemirror";
 import { ACTIONS } from "../Actions";
 
+// Debounce function to limit the number of calls to the onCodeChange handler
+const debounce = (func, delay) => {
+  let timeoutId;
+  return (...args) => {
+    if (timeoutId) clearTimeout(timeoutId);
+    timeoutId = setTimeout(() => {
+      func(...args);
+    }, delay);
+  };
+};
+
 function Editor({ socketRef, roomId, onCodeChange }) {
   const editorRef = useRef(null);
-  
+
   useEffect(() => {
-    const init = () => {
+    const init = async () => {
       const editor = CodeMirror.fromTextArea(
         document.getElementById("realtimeEditor"),
         {
@@ -26,41 +37,37 @@ function Editor({ socketRef, roomId, onCodeChange }) {
       editorRef.current = editor;
       editor.setSize(null, "100%");
 
-      editor.on("change", (instance, changes) => {
-        const { origin } = changes;
+      const handleChange = debounce((code) => {
+        onCodeChange(code);
+        socketRef.current.emit(ACTIONS.CODE_CHANGE, {
+          roomId,
+          code,
+        });
+      }, 1500); // Adjust delay as needed
+
+      editor.on("change", (instance) => {
         const code = instance.getValue();
-        onCodeChange(code); // Update codeRef in parent component
-        
-        if (origin !== "setValue") {
-          socketRef.current.emit(ACTIONS.CODE_CHANGE, {
-            roomId,
-            code,
-          });
-        }
+        handleChange(code);
       });
     };
 
     init();
-  }, [socketRef, roomId, onCodeChange]);
+  }, [roomId, socketRef, onCodeChange]);
 
   useEffect(() => {
-    if (socketRef.current) {
-      socketRef.current.on(ACTIONS.CODE_CHANGE, ({ code }) => {
-        if (code !== null) {
-          editorRef.current.setValue(code);
-        }
-      });
-    }
-    
+    socketRef.current.on(ACTIONS.CODE_CHANGE, ({ code }) => {
+      editorRef.current.setValue(code);
+    });
+
     return () => {
       socketRef.current.off(ACTIONS.CODE_CHANGE);
     };
   }, [socketRef]);
 
   return (
-    <div style={{ height: "600px" }}>
-      <textarea id="realtimeEditor"></textarea>
-    </div>
+    <div style={{ height: "700px" }}>
+    <textarea id="realtimeEditor"></textarea>
+  </div>
   );
 }
 

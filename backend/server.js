@@ -14,6 +14,9 @@ require("dotenv").config();
 app.use(cors());
 app.use(express.json());
 
+
+
+
 const server = http.createServer(app);
 const io = new Server(server, {
   cors: {
@@ -29,6 +32,28 @@ mongoose.connect(process.env.MONGODB_URI, {
 })
   .then(() => console.log("MongoDB connected"))
   .catch(err => console.error("MongoDB connection error:", err));
+
+
+const languageConfig = {
+  python3: { versionIndex: "3" },
+  java: { versionIndex: "3" },
+  cpp: { versionIndex: "4" },
+  nodejs: { versionIndex: "3" },
+  c: { versionIndex: "4" },
+  ruby: { versionIndex: "3" },
+  go: { versionIndex: "3" },
+  scala: { versionIndex: "3" },
+  bash: { versionIndex: "3" },
+  sql: { versionIndex: "3" },
+  pascal: { versionIndex: "2" },
+  csharp: { versionIndex: "3" },
+  php: { versionIndex: "3" },
+  swift: { versionIndex: "3" },
+  rust: { versionIndex: "3" },
+  r: { versionIndex: "3" },
+};
+
+
 
 const userSocketMap = {};
 const getAllConnectedClients = (roomId) => {
@@ -46,6 +71,7 @@ io.on("connection", (socket) => {
   socket.on(ACTIONS.JOIN, ({ roomId, username }) => {
     userSocketMap[socket.id] = username;
     socket.join(roomId);
+
     const clients = getAllConnectedClients(roomId);
     clients.forEach(({ socketId }) => {
       io.to(socketId).emit(ACTIONS.JOINED, {
@@ -57,11 +83,8 @@ io.on("connection", (socket) => {
   });
 
   socket.on(ACTIONS.CODE_CHANGE, ({ roomId, code }) => {
-    socket.in(roomId).emit(ACTIONS.CODE_CHANGE, { code });
-  });
-
-  socket.on(ACTIONS.SYNC_CODE, ({ socketId, code }) => {
-    io.to(socketId).emit(ACTIONS.CODE_CHANGE, { code });
+    // Emit code change to all users in the room, except the sender
+    socket.to(roomId).emit(ACTIONS.CODE_CHANGE, { code });
   });
 
   socket.on("disconnecting", () => {
@@ -73,9 +96,9 @@ io.on("connection", (socket) => {
       });
     });
     delete userSocketMap[socket.id];
-    socket.leave();
   });
 });
+
 
 // Register Route
 app.post("/register", async (req, res) => {
@@ -143,6 +166,10 @@ app.post("/compile", async (req, res) => {
       clientSecret: process.env.JDOODLE_CLIENT_SECRET,
     });
 
+    if (response.data.error) {
+      throw new Error(response.data.error);
+    }
+
     // Return the response from JDoodle
     res.json(response.data);
   } catch (error) {
@@ -150,6 +177,7 @@ app.post("/compile", async (req, res) => {
     res.status(500).json({ error: "Failed to compile code" });
   }
 });
+
 
 // Server Listening
 const PORT = process.env.PORT || 5000;

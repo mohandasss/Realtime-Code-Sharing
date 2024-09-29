@@ -165,8 +165,8 @@ function Home() {
               <button onClick={joinRoom} className="btn btn-success btn-lg btn-block">
                 JOIN
               </button>
-              <p className="mt-3 text-light">
-                Don't have a room ID? create{" "}
+              <p style={{fontFamily:"urbanist"}} className="mt-3 text-light">
+                Don't have a room ID? create
                 <span
                   onClick={createNewRoom}
                   className="text-success p-2"
