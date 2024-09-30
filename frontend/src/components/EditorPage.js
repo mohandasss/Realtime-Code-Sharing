@@ -6,6 +6,8 @@ import { ACTIONS } from "../Actions";
 import { useNavigate, useLocation, Navigate, useParams } from "react-router-dom";
 import { toast } from "react-hot-toast";
 import axios from "axios";
+import CodeMirror from "codemirror"; // Make sure to import CodeMirror
+import "codemirror/lib/codemirror.css"; // Import CodeMirror styles
 
 // List of supported languages
 const LANGUAGES = [
@@ -40,6 +42,7 @@ function EditorPage() {
   const { roomId } = useParams();
 
   const socketRef = useRef(null);
+  const editorRef = useRef(null); // Reference for CodeMirror editor
 
   useEffect(() => {
     const init = async () => {
@@ -58,24 +61,26 @@ function EditorPage() {
         username: location.state?.username,
       });
 
-      socketRef.current.on(
-        ACTIONS.JOINED,
-        ({ clients, username }) => {
-          if (username !== location.state?.username) {
-            toast.success(`${username} joined the room.`);
-          }
-          setClients(clients);
-          socketRef.current.emit(ACTIONS.SYNC_CODE, {
-            code: codeRef.current,
-          });
+      socketRef.current.on(ACTIONS.JOINED, ({ clients, username }) => {
+        if (username !== location.state?.username) {
+          toast.success(`${username} joined the room.`);
         }
-      );
+        setClients(clients);
+        // Sync code on joining
+        socketRef.current.emit(ACTIONS.SYNC_CODE, { code: codeRef.current });
+      });
+
+      socketRef.current.on(ACTIONS.CODE_CHANGE, ({ code }) => {
+        console.log("Code change receiveddsds:", code); // Debugging line
+        if (editorRef.current) {
+          editorRef.current.setValue(code); // Update editor for other clients
+        }
+      });
+      
 
       socketRef.current.on(ACTIONS.DISCONNECTED, ({ socketId, username }) => {
         toast.success(`${username} left the room`);
-        setClients((prev) => {
-          return prev.filter((client) => client.socketId !== socketId);
-        });
+        setClients((prev) => prev.filter((client) => client.socketId !== socketId));
       });
     };
 
@@ -84,6 +89,7 @@ function EditorPage() {
     return () => {
       socketRef.current && socketRef.current.disconnect();
       socketRef.current.off(ACTIONS.JOINED);
+      socketRef.current.off(ACTIONS.CODE_CHANGE);
       socketRef.current.off(ACTIONS.DISCONNECTED);
     };
   }, [navigate, roomId, location.state]);
@@ -139,7 +145,6 @@ function EditorPage() {
             style={{ maxWidth: "150px", marginTop: "-43px" }}
           />
           <hr style={{ marginTop: "-3rem" }} />
-
           {/* Client list container */}
           <div className="d-flex flex-column flex-grow-1 overflow-auto">
             <span className="mb-5">Members</span>
@@ -147,7 +152,6 @@ function EditorPage() {
               <Client key={client.socketId} username={client.username} />
             ))}
           </div>
-
           <hr />
           {/* Buttons */}
           <div className="mt-auto mb-3">
@@ -159,7 +163,6 @@ function EditorPage() {
             </button>
           </div>
         </div>
-
         {/* Editor panel */}
         <div className="col-md-10 text-light d-flex flex-column">
           {/* Language selector */}
@@ -182,7 +185,11 @@ function EditorPage() {
             roomId={roomId}
             onCodeChange={(code) => {
               codeRef.current = code;
+              if (socketRef.current) {
+                socketRef.current.emit(ACTIONS.CODE_CHANGE, { roomId, code });
+              }
             }}
+            editorRef={editorRef} // Pass the editorRef to the Editor component
           />
         </div>
       </div>
@@ -213,20 +220,13 @@ function EditorPage() {
         <div className="d-flex justify-content-between align-items-center mb-3">
           <h5 className="m-0">Compiler Output ({selectedLanguage})</h5>
           <div>
-            <button
-              className="btn btn-success me-2"
-              onClick={runCode}
-              disabled={isCompiling}
-            >
+            <button className="btn btn-secondary" onClick={runCode} disabled={isCompiling}>
               {isCompiling ? "Compiling..." : "Run Code"}
-            </button>
-            <button className="btn btn-secondary" onClick={toggleCompileWindow}>
-              Close
             </button>
           </div>
         </div>
-        <pre className="bg-secondary p-3 rounded">
-          {output || "Output will appear here after compilation"}
+        <pre className="bg-light text-dark p-2 rounded" style={{ overflowY: "auto", maxHeight: "80%" }}>
+          {output}
         </pre>
       </div>
     </div>

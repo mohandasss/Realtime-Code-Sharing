@@ -1,39 +1,41 @@
+// server.js
+
 const express = require("express");
 const app = express();
 const http = require("http");
 const { Server } = require("socket.io");
-const ACTIONS = require("./Actions");
 const cors = require("cors");
 const axios = require("axios");
-const mongoose = require("mongoose"); // Make sure to import mongoose
-const bcrypt = require("bcrypt"); // Make sure to import bcrypt
-const jwt = require("jsonwebtoken"); // Make sure to import jwt
+const mongoose = require("mongoose");
+const bcrypt = require("bcrypt");
+const jwt = require("jsonwebtoken");
 require("dotenv").config();
- const User =require("./models/User")
+const ACTIONS = require("./Actions");
+const User = require("./models/User");
 
+// Middleware setup
 app.use(cors());
 app.use(express.json());
 
-
-
-
+// Create HTTP server and Socket.IO instance
 const server = http.createServer(app);
 const io = new Server(server, {
   cors: {
-    origin: "http://localhost:3000",
+    origin: "http://localhost:3000", // Frontend URL
     methods: ["GET", "POST"],
   },
 });
 
-// Connect to MongoDB
-mongoose.connect(process.env.MONGODB_URI, {
-  useNewUrlParser: true,
-
-})
+// MongoDB connection
+mongoose
+  .connect(process.env.MONGODB_URI, {
+    useNewUrlParser: true,
+    useUnifiedTopology: true,
+  })
   .then(() => console.log("MongoDB connected"))
-  .catch(err => console.error("MongoDB connection error:", err));
+  .catch((err) => console.error("MongoDB connection error:", err));
 
-
+// Language configuration for JDoodle API
 const languageConfig = {
   python3: { versionIndex: "3" },
   java: { versionIndex: "3" },
@@ -53,8 +55,7 @@ const languageConfig = {
   r: { versionIndex: "3" },
 };
 
-
-
+// Socket.IO logic
 const userSocketMap = {};
 const getAllConnectedClients = (roomId) => {
   return Array.from(io.sockets.adapter.rooms.get(roomId) || []).map(
@@ -68,6 +69,8 @@ const getAllConnectedClients = (roomId) => {
 };
 
 io.on("connection", (socket) => {
+  console.log("Socket connected:", socket.id);
+
   socket.on(ACTIONS.JOIN, ({ roomId, username }) => {
     userSocketMap[socket.id] = username;
     socket.join(roomId);
@@ -82,10 +85,10 @@ io.on("connection", (socket) => {
     });
   });
 
-  socket.on(ACTIONS.CODE_CHANGE, ({ roomId, code }) => {
-    // Emit code change to all users in the room, except the sender
-    socket.to(roomId).emit(ACTIONS.CODE_CHANGE, { code });
-  });
+ socket.on(ACTIONS.CODE_CHANGE, ({ roomId, code }) => {
+   socket.to(roomId).emit(ACTIONS.CODE_CHANGE, { code });
+ });
+
 
   socket.on("disconnecting", () => {
     const rooms = [...socket.rooms];
@@ -99,11 +102,9 @@ io.on("connection", (socket) => {
   });
 });
 
-
-// Register Route
+// User registration
 app.post("/register", async (req, res) => {
   const { username, password } = req.body;
-
   try {
     const existingUser = await User.findOne({ username });
     if (existingUser) {
@@ -119,10 +120,9 @@ app.post("/register", async (req, res) => {
   }
 });
 
-// Login Route
+// User login
 app.post("/login", async (req, res) => {
   const { username, password } = req.body;
-
   try {
     const user = await User.findOne({ username });
     if (!user) {
@@ -134,34 +134,32 @@ app.post("/login", async (req, res) => {
       return res.status(401).json({ message: "Invalid username or password" });
     }
 
-    const token = jwt.sign({ username }, process.env.JWT_SECRET, { expiresIn: '7d' });
-    res.json({ token, message: "Logged in Successfully" });
+    const token = jwt.sign({ username }, process.env.JWT_SECRET, {
+      expiresIn: "7d",
+    });
+    res.json({ token, message: "Logged in successfully" });
   } catch (error) {
     res.status(500).json({ error: "Failed to log in" });
   }
 });
 
-// Compile Route
+// Code compilation route using JDoodle API
 app.post("/compile", async (req, res) => {
   const { code, language } = req.body;
-
-  // Check if both code and language are provided
   if (!code || !language) {
     return res.status(400).json({ error: "Code and language are required" });
   }
 
-  // Ensure language exists in languageConfig
   const versionIndex = languageConfig[language]?.versionIndex;
   if (!versionIndex) {
     return res.status(400).json({ error: "Invalid language" });
   }
 
   try {
-    // Make the API call to JDoodle
     const response = await axios.post("https://api.jdoodle.com/v1/execute", {
       script: code,
-      language: language,
-      versionIndex: versionIndex,
+      language,
+      versionIndex,
       clientId: process.env.JDOODLE_CLIENT_ID,
       clientSecret: process.env.JDOODLE_CLIENT_SECRET,
     });
@@ -170,15 +168,13 @@ app.post("/compile", async (req, res) => {
       throw new Error(response.data.error);
     }
 
-    // Return the response from JDoodle
     res.json(response.data);
   } catch (error) {
-    console.error('JDoodle API Error:', error.response?.data || error.message);
+    console.error("JDoodle API Error:", error.response?.data || error.message);
     res.status(500).json({ error: "Failed to compile code" });
   }
 });
 
-
-// Server Listening
+// Server listening
 const PORT = process.env.PORT || 5000;
 server.listen(PORT, () => console.log(`Server is running on port ${PORT}`));

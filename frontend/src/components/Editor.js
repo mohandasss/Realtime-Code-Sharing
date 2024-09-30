@@ -7,67 +7,100 @@ import "codemirror/lib/codemirror.css";
 import CodeMirror from "codemirror";
 import { ACTIONS } from "../Actions";
 
-// Debounce function to limit the number of calls to the onCodeChange handler
-const debounce = (func, delay) => {
-  let timeoutId;
+// Throttle function to limit the number of calls to the onCodeChange handler
+const throttle = (func, limit) => {
+  let lastFunc;
+  let lastRan;
   return (...args) => {
-    if (timeoutId) clearTimeout(timeoutId);
-    timeoutId = setTimeout(() => {
-      func(...args);
-    }, delay);
+    const context = this;
+    if (!lastRan) {
+      func.apply(context, args);
+      lastRan = Date.now();
+    } else {
+      clearTimeout(lastFunc);
+      lastFunc = setTimeout(() => {
+        if (Date.now() - lastRan >= limit) {
+          func.apply(context, args);
+          lastRan = Date.now();
+        }
+      }, limit - (Date.now() - lastRan));
+    }
   };
 };
 
 function Editor({ socketRef, roomId, onCodeChange }) {
-  const editorRef = useRef(null);
+  const editorRef = useRef(null); // Reference for the CodeMirror instance
+  const textareaRef = useRef(null); // Reference for the textarea
 
   useEffect(() => {
     const init = async () => {
-      const editor = CodeMirror.fromTextArea(
-        document.getElementById("realtimeEditor"),
-        {
+      const textarea = textareaRef.current; // Get textarea reference
+      if (!textarea) return;
+
+      // Initialize CodeMirror only if it hasn't been initialized
+      if (!editorRef.current) {
+        const editor = CodeMirror.fromTextArea(textarea, {
           mode: { name: "javascript", json: true },
           theme: "dracula",
           autoCloseTags: true,
           autoCloseBrackets: true,
           lineNumbers: true,
-        }
-      );
-
-      editorRef.current = editor;
-      editor.setSize(null, "100%");
-
-      const handleChange = debounce((code) => {
-        onCodeChange(code);
-        socketRef.current.emit(ACTIONS.CODE_CHANGE, {
-          roomId,
-          code,
         });
-      }, 1500); // Adjust delay as needed
 
-      editor.on("change", (instance) => {
-        const code = instance.getValue();
-        handleChange(code);
-      });
+        editorRef.current = editor;
+        editor.setSize(null, "100%");
+
+        const handleChange = throttle((code) => {
+          const currentCursor = editor.getCursor(); // Get current cursor position
+          onCodeChange(code);
+          if (socketRef.current) {
+            socketRef.current.emit(ACTIONS.CODE_CHANGE, {
+              roomId,
+              code,
+            });
+          }
+          editor.setCursor(currentCursor); // Restore cursor position after sending request
+        }, 300); // Throttle updates every 300ms
+
+        editor.on("change", (instance) => {
+          const code = instance.getValue();
+          handleChange(code);
+        });
+      }
     };
 
     init();
   }, [roomId, socketRef, onCodeChange]);
 
   useEffect(() => {
-    socketRef.current.on(ACTIONS.CODE_CHANGE, ({ code }) => {
-      editorRef.current.setValue(code);
-    });
+    if (socketRef.current && editorRef.current) {
+      socketRef.current.on(ACTIONS.CODE_CHANGE, ({ code }) => {
+        const editor = editorRef.current;
+
+        // Check if the new code is different from the current value
+        if (editor.getValue() !== code) {
+          const currentCursor = editor.getCursor(); // Store current cursor position
+          
+          // Set the new value and retain the cursor position
+          editor.setValue(code);
+          
+          // Optional: You can set the cursor to a new position if needed
+          // editor.setCursor(currentCursor);
+        }
+      });
+    }
 
     return () => {
-      socketRef.current.off(ACTIONS.CODE_CHANGE);
+      if (socketRef.current) {
+        socketRef.current.off(ACTIONS.CODE_CHANGE);
+      }
     };
   }, [socketRef]);
 
   return (
     <div style={{ height: "700px" }}>
-    <textarea id="realtimeEditor"></textarea>
-  </div>
+      <textarea ref={textareaRef} id="realtimeEditor" style={{ display: "none" }}></textarea>
+    </div>
   );
 }
 
