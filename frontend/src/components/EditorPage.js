@@ -6,7 +6,6 @@ import { ACTIONS } from "../Actions";
 import { useNavigate, useLocation, Navigate, useParams } from "react-router-dom";
 import { toast } from "react-hot-toast";
 import axios from "axios";
-import CodeMirror from "codemirror"; // Make sure to import CodeMirror
 import "codemirror/lib/codemirror.css"; // Import CodeMirror styles
 
 // List of supported languages
@@ -36,6 +35,7 @@ function EditorPage() {
   const [isCompiling, setIsCompiling] = useState(false);
   const [selectedLanguage, setSelectedLanguage] = useState("python3");
   const codeRef = useRef("");
+  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false); // Track unsaved changes
 
   const location = useLocation();
   const navigate = useNavigate();
@@ -45,16 +45,22 @@ function EditorPage() {
   const editorRef = useRef(null); // Reference for CodeMirror editor
 
   useEffect(() => {
+    const handleErrors = (err) => {
+      console.log("Error", err);
+      toast.error("Socket connection failed, try again later");
+      navigate("/");
+    };
+
     const init = async () => {
       socketRef.current = await initSocket();
-      socketRef.current.on("connect_error", (err) => handleErrors(err));
-      socketRef.current.on("connect_failed", (err) => handleErrors(err));
 
-      const handleErrors = (err) => {
-        console.log("Error", err);
-        toast.error("Socket connection failed, try again later");
-        navigate("/");
-      };
+      if (!socketRef.current) {
+        handleErrors(new Error("Socket initialization failed"));
+        return;
+      }
+
+      socketRef.current.on("connect_error", handleErrors);
+      socketRef.current.on("connect_failed", handleErrors);
 
       socketRef.current.emit(ACTIONS.JOIN, {
         roomId,
@@ -71,12 +77,12 @@ function EditorPage() {
       });
 
       socketRef.current.on(ACTIONS.CODE_CHANGE, ({ code }) => {
-        console.log("Code change receiveddsds:", code); // Debugging line
+        console.log("Code change received:", code); // Debugging line
+        console.log("Editor Ref Current:", editorRef.current); // Debugging line
         if (editorRef.current) {
           editorRef.current.setValue(code); // Update editor for other clients
         }
       });
-      
 
       socketRef.current.on(ACTIONS.DISCONNECTED, ({ socketId, username }) => {
         toast.success(`${username} left the room`);
@@ -86,13 +92,25 @@ function EditorPage() {
 
     init();
 
+    // Confirmation dialog for unsaved changes
+    const handleBeforeUnload = (event) => {
+      if (hasUnsavedChanges) {
+        const confirmationMessage = "You have unsaved changes. Do you really want to leave?";
+        event.returnValue = confirmationMessage; // Show confirmation dialog
+        return confirmationMessage; // For some browsers
+      }
+    };
+
+    window.addEventListener("beforeunload", handleBeforeUnload);
+
     return () => {
       socketRef.current && socketRef.current.disconnect();
       socketRef.current.off(ACTIONS.JOINED);
       socketRef.current.off(ACTIONS.CODE_CHANGE);
       socketRef.current.off(ACTIONS.DISCONNECTED);
+      window.removeEventListener("beforeunload", handleBeforeUnload); // Clean up event listener
     };
-  }, [navigate, roomId, location.state]);
+  }, [navigate, roomId, location.state, hasUnsavedChanges]);
 
   if (!location.state) {
     return <Navigate to="/" />;
@@ -185,6 +203,7 @@ function EditorPage() {
             roomId={roomId}
             onCodeChange={(code) => {
               codeRef.current = code;
+              setHasUnsavedChanges(true); // Mark as having unsaved changes
               if (socketRef.current) {
                 socketRef.current.emit(ACTIONS.CODE_CHANGE, { roomId, code });
               }
@@ -194,7 +213,7 @@ function EditorPage() {
         </div>
       </div>
 
-      {/* Compiler toggle button */}
+      {/* Compile button */}
       <button
         className="btn btn-primary position-fixed bottom-0 end-0 m-3"
         onClick={toggleCompileWindow}
@@ -228,7 +247,7 @@ function EditorPage() {
         <pre className="bg-light text-dark p-2 rounded" style={{ overflowY: "auto", maxHeight: "80%" }}>
           {output}
         </pre>
-      </div>
+      </div> 
     </div>
   );
 }

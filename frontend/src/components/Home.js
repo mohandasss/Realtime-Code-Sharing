@@ -125,76 +125,106 @@ function Home() {
   };
 
   return (
-    <div className="container-fluid">
-      <div className="row justify-content-center align-items-center min-vh-100">
-        <div className="col-12 col-md-6">
-          <div className="card shadow-sm p-2 mb-5 bg-secondary rounded">
-            <div className="card-body text-center bg-dark">
-              <img
-                src="/images/DevCaster1.png"
-                alt="Logo"
-                className="img-fluid mx-auto mt-2 mb-2 rounded-lg d-block"
-                style={{ maxWidth: "150px" }}
-              />
-              <h4 className="card-title text-light mb-4">
-                Dev<span className="text-orange">Caster</span>
-              </h4>
-
-              <h5 className="card-title text-light mb-4">Enter the ROOM ID</h5>
-
-              <div className="form-group">
-                <input
-                  type="text"
-                  value={roomId}
-                  onChange={(e) => setRoomId(e.target.value)}
-                  className="form-control mb-2"
-                  placeholder="ROOM ID"
-                  onKeyUp={handleInputEnter}
-                />
-              </div>
-              <div className="form-group">
-                <input
-                  type="text"
-                  value={username}
-                  onChange={(e) => setUsername(e.target.value)}
-                  className="form-control mb-2"
-                  placeholder="USERNAME"
-                  disabled={!token} // Disable input if logged in
-                />
-              </div>
-              <button onClick={joinRoom} className="btn btn-success btn-lg btn-block">
-                JOIN
-              </button>
-              <p style={{fontFamily:"urbanist"}} className="mt-3 text-light">
-                Don't have a room ID? create
-                <span
-                  onClick={createNewRoom}
-                  className="text-success p-2"
-                  style={{ cursor: "pointer" }}
-                >
-                  New Room
-                </span>
-              </p>
-            </div>
-          </div>
+    <div style={{ minHeight: "100vh", display: "flex", justifyContent: "center", alignItems: "center", backgroundColor: "#1e1e2f" }}>
+      <div style={{ maxWidth: "600px", width: "100%", padding: "40px", backgroundColor: "#2c2c3e", borderRadius: "12px", boxShadow: "0px 6px 25px rgba(0, 0, 0, 0.3)" }}>
+        <div style={{ textAlign: "center" }}>
+          <img
+            src="/images/DevCaster1.png"
+            alt="Logo"
+            style={{
+              maxWidth: "200px",
+              marginBottom: "30px",
+              borderRadius: "10px",
+            }}
+          />
+          <h4 style={{ color: "#fff", fontFamily: "Urbanist, sans-serif", marginBottom: "30px", fontSize: "28px" }}>
+            Dev<span style={{ color: "#ff6800" }}>Caster</span>
+          </h4>
+  
+          <h5 style={{ color: "#fff", fontFamily: "Urbanist, sans-serif", marginBottom: "30px", fontSize: "22px" }}>Enter the ROOM ID</h5>
+  
+          <input
+            type="text"
+            value={roomId}
+            onChange={(e) => setRoomId(e.target.value)}
+            placeholder="ROOM ID"
+            style={{
+              fontFamily:"urbanist",
+              width: "100%",
+              padding: "15px",
+              marginBottom: "20px",
+              borderRadius: "8px",
+              border: "1px solid #ddd",
+            }}
+            onKeyUp={handleInputEnter}
+          />
+  
+          <input
+            type="text"
+            value={username}
+            onChange={(e) => setUsername(e.target.value)}
+            placeholder="USERNAME"
+            disabled={!token}
+            style={{
+              fontFamily:"urbanist",
+              width: "100%",
+              padding: "15px",
+              marginBottom: "20px",
+              borderRadius: "8px",
+              border: "1px solid #ddd",
+              backgroundColor:"#f0000"
+            }}
+          />
+  
+          <button
+            onClick={joinRoom}
+            style={{
+              width: "100%",
+              padding: "15px",
+              backgroundColor: "#28a745",
+              color: "#fff",
+              border: "none",
+              borderRadius: "8px",
+              cursor: "pointer",
+              fontFamily: "Urbanist, sans-serif",
+              fontSize: "18px",
+              transition: "background-color 0.3s ease",
+            }}
+            onMouseOver={(e) => (e.target.style.backgroundColor = "#218838")}
+            onMouseOut={(e) => (e.target.style.backgroundColor = "#28a745")}
+          >
+            JOIN
+          </button>
+  
+          <p style={{ fontFamily: "Urbanist, sans-serif", color: "#fff", marginTop: "30px", fontSize: "16px" }}>
+            Don't have a room ID? create
+            <span
+              onClick={createNewRoom}
+              style={{ color: "#28a745", paddingLeft: "5px", cursor: "pointer" }}
+            >
+              New Room
+            </span>
+          </p>
         </div>
       </div>
-      <Modal 
-        isOpen={isRegisterModalOpen} 
-        onClose={() => setIsRegisterModalOpen(false)} 
+  
+      <Modal
+        isOpen={isRegisterModalOpen}
+        onClose={() => setIsRegisterModalOpen(false)}
         onRegister={handleRegisterSuccess}
         onSwitchToLogin={() => {
           setIsRegisterModalOpen(false);
           setIsLoginModalOpen(true);
         }}
       />
-      <LoginModal 
-        isOpen={isLoginModalOpen} 
-        onClose={() => setIsLoginModalOpen(false)} 
+      <LoginModal
+        isOpen={isLoginModalOpen}
+        onClose={() => setIsLoginModalOpen(false)}
         onLogin={handleLoginSuccess}
       />
     </div>
   );
+  
 }
 
 export default Home;

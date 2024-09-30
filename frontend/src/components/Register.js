@@ -30,30 +30,36 @@ const Register = () => {
       justifyContent: 'center',
       alignItems: 'center',
       height: '100vh',
-      backgroundColor: '#0000'
+      backgroundColor: '#f0000'
     }}>
       <div style={{
-        maxWidth: '800px', // Increased width
-        padding: '60px',   // Increased padding
+        maxWidth: '600px', // Increased width
+        padding: '40px',   // Increased padding
         border: '1px solid #ccc',
-        borderRadius: '8px',
-        boxShadow: '0 4px 8px rgba(0,0,0,0.1)',
+        borderRadius: '12px',
+        boxShadow: '0 6px 20px rgba(0,0,0,0.2)',
         backgroundColor: '#fff'
       }}>
-        <h2 style={{ textAlign: 'center' }}>Register</h2>
+        <h2 style={{ textAlign: 'center', fontFamily: "Urbanist, sans-serif", fontSize: "28px", marginBottom: '30px' }}>Register</h2>
         <form onSubmit={handleSubmit}>
-          <div style={{ fontFamily:"urbanist", marginBottom: '15px' }}>
-            <label  htmlFor="username">Username</label>
+          <div style={{ fontFamily: "Urbanist, sans-serif", marginBottom: '20px' }}>
+            <label htmlFor="username">Username</label>
             <input
               type="text"
               id="username"
               value={username}
               onChange={(e) => setUsername(e.target.value)}
               required
-              style={{  width: '100%', padding: '10px', borderRadius: '4px', border: '1px solid #ccc' }}
+              style={{ 
+                width: '100%', 
+                padding: '15px', 
+                borderRadius: '8px', 
+                border: '1px solid #ccc',
+                marginBottom: '15px'
+              }}
             />
           </div>
-          <div  style={{  fontFamily:"urbanist", marginBottom: '15px' }}>
+          <div style={{ fontFamily: "Urbanist, sans-serif", marginBottom: '20px' }}>
             <label htmlFor="password">Password</label>
             <input
               type="password"
@@ -61,28 +67,35 @@ const Register = () => {
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               required
-              style={{ width: '100%', padding: '10px', borderRadius: '4px', border: '1px solid #ccc' }}
+              style={{ 
+                width: '100%', 
+                padding: '15px', 
+                borderRadius: '8px', 
+                border: '1px solid #ccc',
+                marginBottom: '15px'
+              }}
             />
           </div>
           <button type="submit" disabled={loading} style={{
-             fontFamily:"urbanist",
             width: '100%',
-            padding: '12px',
-            borderRadius: '4px',
+            padding: '15px',
+            borderRadius: '8px',
             border: 'none',
-            backgroundColor: '#4CAF50',
+            backgroundColor: '#28a745',
             color: 'white',
-            cursor: 'pointer'
-            
+            cursor: 'pointer',
+            fontFamily: "Urbanist, sans-serif",
+            fontSize: "18px",
+            transition: 'background-color 0.3s ease',
           }}>
             {loading ? 'Registering...' : 'Register'}
           </button>
         </form>
-        <p style={{  fontFamily:"urbanist",textAlign: 'center', marginTop: '20px' }}>
+        <p style={{ fontFamily: "Urbanist, sans-serif", textAlign: 'center', marginTop: '30px', fontSize: '16px' }}>
           Already have an account?{' '}
           <span
             onClick={() => navigate('/login')}
-            style={{ color: '#4CAF50', cursor: 'pointer' }}
+            style={{ color: '#28a745', cursor: 'pointer' }}
           >
             Login
           </span>

@@ -21,7 +21,7 @@ const Login = ({ setIsAuthenticated }) => {
       
       // Update authentication state
       setIsAuthenticated(true);
-      toast.success("Welcome to DevCaster") // Update here to reflect the change immediately
+      toast.success("Welcome to DevCaster"); // Display welcome message
 
       // Redirect to home with username
       navigate('/', { state: { username } });
@@ -39,19 +39,19 @@ const Login = ({ setIsAuthenticated }) => {
       justifyContent: 'center',
       alignItems: 'center',
       height: '100vh',
-      backgroundColor: '#0000'
+      backgroundColor: '#f0000'
     }}>
       <div style={{
-        maxWidth: '800px', 
-        padding: '60px',
+        maxWidth: '600px', // Increased width
+        padding: '40px',   // Increased padding
         border: '1px solid #ccc',
-        borderRadius: '8px',
-        boxShadow: '0 4px 8px rgba(0,0,0,0.1)',
+        borderRadius: '12px',
+        boxShadow: '0 6px 20px rgba(0,0,0,0.2)',
         backgroundColor: '#fff'
       }}>
-        <h2 style={{ textAlign: 'center' }}>Login</h2>
+        <h2 style={{ textAlign: 'center', fontFamily: "Urbanist, sans-serif", fontSize: "28px", marginBottom: '30px' }}>Login</h2>
         <form onSubmit={handleSubmit}>
-          <div style={{  fontFamily:"urbanist", marginBottom: '15px' }}>
+          <div style={{ fontFamily: "Urbanist, sans-serif", marginBottom: '20px' }}>
             <label htmlFor="username">Username</label>
             <input
               type="text"
@@ -59,10 +59,16 @@ const Login = ({ setIsAuthenticated }) => {
               value={username}
               onChange={(e) => setUsername(e.target.value)}
               required
-              style={{ width: '100%', padding: '10px', borderRadius: '4px', border: '1px solid #ccc' }}
+              style={{
+                width: '100%', 
+                padding: '15px', 
+                borderRadius: '8px', 
+                border: '1px solid #ccc',
+                marginBottom: '15px'
+              }}
             />
           </div>
-          <div style={{  fontFamily:"urbanist", marginBottom: '15px' }}>
+          <div style={{ fontFamily: "Urbanist, sans-serif", marginBottom: '20px' }}>
             <label htmlFor="password">Password</label>
             <input
               type="password"
@@ -70,27 +76,35 @@ const Login = ({ setIsAuthenticated }) => {
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               required
-              style={{ width: '100%', padding: '10px', borderRadius: '4px', border: '1px solid #ccc' }}
+              style={{
+                width: '100%', 
+                padding: '15px', 
+                borderRadius: '8px', 
+                border: '1px solid #ccc',
+                marginBottom: '15px'
+              }}
             />
           </div>
           <button type="submit" disabled={loading} style={{
-             fontFamily:"urbanist",
             width: '100%',
-            padding: '12px',
-            borderRadius: '4px',
+            padding: '15px',
+            borderRadius: '8px',
             border: 'none',
-            backgroundColor: '#4CAF50',
+            backgroundColor: '#28a745',
             color: 'white',
-            cursor: 'pointer'
+            cursor: 'pointer',
+            fontFamily: "Urbanist, sans-serif",
+            fontSize: "18px",
+            transition: 'background-color 0.3s ease',
           }}>
             {loading ? 'Logging in...' : 'Login'}
           </button>
         </form>
-        <p style={{ fontFamily:"urbanist", textAlign: 'center', marginTop: '20px' }}>
+        <p style={{ fontFamily: "Urbanist, sans-serif", textAlign: 'center', marginTop: '30px', fontSize: '16px' }}>
           Don't have an account?{' '}
           <span
             onClick={() => navigate('/register')}
-            style={{ color: '#4CAF50', cursor: 'pointer' }}
+            style={{ color: '#28a745', cursor: 'pointer' }}
           >
             Register
           </span>

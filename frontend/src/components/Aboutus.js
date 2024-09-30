@@ -30,7 +30,7 @@ const Aboutus = () => {
           <a href="https://github.com/mohandasss" target="_blank" rel="noopener noreferrer">
             <FaGithub size={30} color="#ffffff" />
           </a>
-          <a href="https://acesse.one/SxYo8" target="_blank" rel="noopener noreferrer">
+          <a href="http://surl.li/jjyynf" target="_blank" rel="noopener noreferrer">
             <FaWhatsapp size={30} color="#42ff00 " />
           </a>
         </div>

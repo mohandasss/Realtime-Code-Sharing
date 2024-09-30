@@ -47,20 +47,18 @@ function Editor({ socketRef, roomId, onCodeChange }) {
           lineNumbers: true,
         });
 
-        editorRef.current = editor;
+        editorRef.current = editor; // Set editorRef
         editor.setSize(null, "100%");
 
         const handleChange = throttle((code) => {
-          const currentCursor = editor.getCursor(); // Get current cursor position
-          onCodeChange(code);
+          onCodeChange(code); // Call the parent onCodeChange function
           if (socketRef.current) {
             socketRef.current.emit(ACTIONS.CODE_CHANGE, {
               roomId,
               code,
             });
           }
-          editor.setCursor(currentCursor); // Restore cursor position after sending request
-        }, 300); // Throttle updates every 300ms
+        }, 900); // Throttle updates every 300ms
 
         editor.on("change", (instance) => {
           const code = instance.getValue();
@@ -77,15 +75,8 @@ function Editor({ socketRef, roomId, onCodeChange }) {
       socketRef.current.on(ACTIONS.CODE_CHANGE, ({ code }) => {
         const editor = editorRef.current;
 
-        // Check if the new code is different from the current value
         if (editor.getValue() !== code) {
-          const currentCursor = editor.getCursor(); // Store current cursor position
-          
-          // Set the new value and retain the cursor position
-          editor.setValue(code);
-          
-          // Optional: You can set the cursor to a new position if needed
-          // editor.setCursor(currentCursor);
+          editor.setValue(code); // Update the editor's content
         }
       });
     }
